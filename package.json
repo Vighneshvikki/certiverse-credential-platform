@@ -1,0 +1,16 @@
+{
+  "name": "quizmint-root",
+  "version": "1.0.0",
+  "private": true,
+  "workspaces": [
+    "frontend",
+    "backend"
+  ],
+  "scripts": {
+    "dev": "concurrently --kill-others --names \"BACKEND,FRONTEND\" --prefix-colors \"blue,cyan\" \"npm run dev --workspace=backend\" \"npm run dev --workspace=frontend\"",
+    "start": "npm run dev"
+  },
+  "dependencies": {
+    "concurrently": "^8.2.2"
+  }
+}

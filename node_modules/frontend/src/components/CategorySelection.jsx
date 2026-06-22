@@ -1,0 +1,176 @@
+import React, { useEffect, useState } from 'react';
+import { motion } from 'framer-motion';
+import { Code, Database, Cpu, Brain, TrendingUp, Award, ArrowLeft, Loader2 } from 'lucide-react';
+
+const iconMap = {
+  Code,
+  Database,
+  Cpu,
+  Brain,
+  TrendingUp
+};
+
+export default function CategorySelection({ userName, setUserName, onSelectCategory, onBack }) {
+  const [categories, setCategories] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
+  const [touched, setTouched] = useState(false);
+  const [shakeActive, setShakeActive] = useState(false);
+
+  useEffect(() => {
+    fetch('/api/categories')
+      .then((res) => {
+        if (!res.ok) {
+          throw new Error('Failed to load categories');
+        }
+        return res.json();
+      })
+      .then((data) => {
+        setCategories(data);
+        setLoading(false);
+      })
+      .catch((err) => {
+        console.error(err);
+        setError('Could not connect to backend server. Please verify Express is running on port 5000.');
+        setLoading(false);
+      });
+  }, []);
+
+  const handleCategoryClick = (category) => {
+    setTouched(true);
+    if (!userName.trim()) {
+      setShakeActive(true);
+      setTimeout(() => setShakeActive(false), 500);
+      return;
+    }
+    onSelectCategory(category);
+  };
+
+  const listVariants = {
+    hidden: { opacity: 0 },
+    show: {
+      opacity: 1,
+      transition: {
+        staggerChildren: 0.1
+      }
+    }
+  };
+
+  const cardVariants = {
+    hidden: { opacity: 0, x: -20 },
+    show: { 
+      opacity: 1, 
+      x: 0,
+      transition: { type: 'spring', stiffness: 100, damping: 15 } 
+    }
+  };
+
+  return (
+    <div className="category-selection-container">
+      <div style={{ marginBottom: '2.5rem' }}>
+        <button 
+          onClick={onBack} 
+          className="btn btn-secondary" 
+          style={{ padding: '0.5rem 1rem', fontSize: '0.85rem', marginBottom: '1.5rem' }}
+          id="category-back-btn"
+        >
+          <ArrowLeft size={14} /> Back
+        </button>
+        <h1 style={{ fontSize: '2.25rem', fontWeight: 800, color: 'var(--text-dark)', marginBottom: '0.5rem', letterSpacing: '-0.03em' }}>
+          Begin Your Assessment
+        </h1>
+        <p style={{ color: 'var(--text-muted)', fontSize: '1rem' }}>
+          Enter your professional details and select a domain category to initiate the evaluation.
+        </p>
+      </div>
+
+      {/* Name Input Card with Shake animation */}
+      <motion.div 
+        className="user-form-card" 
+        style={{ maxWidth: '100%', marginBottom: '2.5rem', textAlign: 'left', padding: '2rem' }}
+        animate={shakeActive ? { x: [-10, 10, -10, 10, -5, 5, 0] } : {}}
+        transition={{ duration: 0.4 }}
+      >
+        <div className="form-group" style={{ margin: 0 }}>
+          <label htmlFor="user-name-input" style={{ fontSize: '0.95rem', fontWeight: 700, marginBottom: '0.6rem', color: 'var(--text-dark)', display: 'block' }}>
+            Full Name (As it should appear on the certificate)
+          </label>
+          <input
+            type="text"
+            id="user-name-input"
+            value={userName}
+            onChange={(e) => setUserName(e.target.value)}
+            placeholder="e.g. Alex Harrison"
+            className="form-input"
+            required
+            autoComplete="name"
+          />
+          {touched && !userName.trim() && (
+            <p style={{ color: 'var(--danger-text)', fontSize: '0.85rem', marginTop: '0.5rem', fontWeight: 600 }}>
+              * A valid name is required to verify certification.
+            </p>
+          )}
+        </div>
+      </motion.div>
+
+      {/* Categories Display */}
+      {loading ? (
+        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '4rem 0' }}>
+          <Loader2 size={36} className="spinner" style={{ animation: 'spinner 1s linear infinite', color: 'var(--primary)', marginBottom: '1rem' }} />
+          <p style={{ color: 'var(--text-muted)' }}>Loading evaluation domains...</p>
+        </div>
+      ) : error ? (
+        <div style={{ backgroundColor: 'var(--danger-light)', border: '1px solid var(--danger-text)', borderRadius: 'var(--radius-md)', padding: '1.5rem', color: 'var(--danger-text)' }}>
+          <h4 style={{ fontWeight: 700, marginBottom: '0.5rem' }}>Connection Failure</h4>
+          <p style={{ fontSize: '0.9rem' }}>{error}</p>
+        </div>
+      ) : (
+        <div>
+          <h2 style={{ fontSize: '1.4rem', fontWeight: 800, color: 'var(--text-dark)', marginBottom: '1.25rem', letterSpacing: '-0.02em' }}>
+            Select Domain Focus
+          </h2>
+          <motion.div 
+            className="category-grid"
+            variants={listVariants}
+            initial="hidden"
+            animate="show"
+          >
+            {categories.map((cat) => {
+              const IconComp = iconMap[cat.icon] || Award;
+              return (
+                <motion.div
+                  key={cat.id}
+                  onClick={() => handleCategoryClick(cat)}
+                  className="category-card"
+                  id={`cat-card-${cat.id}`}
+                  variants={cardVariants}
+                  whileHover={{ 
+                    scale: 1.01, 
+                    x: 6,
+                    backgroundColor: 'rgba(139, 92, 246, 0.05)'
+                  }}
+                  whileTap={{ scale: 0.99 }}
+                >
+                  <div className="category-icon">
+                    <IconComp size={24} />
+                  </div>
+                  <div className="category-details">
+                    <h3>{cat.name}</h3>
+                    <p style={{ fontSize: '0.95rem', color: 'var(--text-muted)' }}>{cat.description}</p>
+                    <div className="category-meta">
+                      <span className="meta-pill">{cat.questionCount} Questions</span>
+                      <span className="meta-pill">{cat.duration} Limit</span>
+                    </div>
+                  </div>
+                  <div className="category-arrow">
+                    <Award size={20} />
+                  </div>
+                </motion.div>
+              );
+            })}
+          </motion.div>
+        </div>
+      )}
+    </div>
+  );
+}
